@@ -7,7 +7,7 @@ import ProjectModal from './components/ProjectModal';
 import Filters from './components/Filters';
 import SettingsModal from './components/SettingsModal';
 import LanguageModal from './components/LanguageModal';
-import PinModal from './components/PinModal';
+import LoginScreen from './components/LoginScreen';
 
 export default function App() {
   const [projects, setProjects] = useState([]);
@@ -20,15 +20,28 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
-  const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem('pin-unlocked') === 'true');
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   const lang = settings.language;
   const t = tr[lang || 'ru'];
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
     fetchProjects();
     fetchSettings();
-  }, []);
+  }, [user]);
 
   async function fetchSettings() {
     const data = await loadSettings();
@@ -108,11 +121,10 @@ export default function App() {
     if (!error) setProjects((ps) => ps.filter((p) => p.id !== id));
   }
 
-  if (!unlocked) {
-    return <PinModal onUnlock={() => setUnlocked(true)} />;
-  }
+  if (authLoading) return null;
 
-  // Показываем модал выбора языка если настройки загружены, но язык не выбран
+  if (!user) return <LoginScreen />;
+
   if (settingsLoaded && !lang) {
     return <LanguageModal onSelect={handleLanguageSelect} />;
   }
@@ -135,16 +147,22 @@ export default function App() {
               <p className="text-xs text-zinc-400">{t.totalRevenue}</p>
               <p className="text-sm font-semibold text-emerald-600">${totalRevenue.toLocaleString()}</p>
             </div>
-            {/* Language badge */}
             {lang && (
-              <button
-                onClick={() => setShowSettings(true)}
-                className="text-lg"
-                title={t.language}
-              >
+              <button onClick={() => setShowSettings(true)} className="text-lg" title={t.language}>
                 {LANGS[lang]?.flag}
               </button>
             )}
+            <button
+              onClick={() => supabase.auth.signOut()}
+              className="p-2 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors"
+              title="Выйти"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </button>
             <button
               onClick={() => setShowSettings(true)}
               className="p-2 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors"

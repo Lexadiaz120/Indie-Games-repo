@@ -7,6 +7,7 @@ import ProjectModal from './components/ProjectModal';
 import Filters from './components/Filters';
 import SettingsModal from './components/SettingsModal';
 import LanguageModal from './components/LanguageModal';
+import PinModal from './components/PinModal';
 
 export default function App() {
   const [projects, setProjects] = useState([]);
@@ -19,6 +20,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem('pin-unlocked') === 'true');
 
   const lang = settings.language;
   const t = tr[lang || 'ru'];
@@ -104,6 +106,10 @@ export default function App() {
   async function handleDelete(id) {
     const { error } = await supabase.from('projects').delete().eq('id', id);
     if (!error) setProjects((ps) => ps.filter((p) => p.id !== id));
+  }
+
+  if (!unlocked) {
+    return <PinModal onUnlock={() => setUnlocked(true)} />;
   }
 
   // Показываем модал выбора языка если настройки загружены, но язык не выбран

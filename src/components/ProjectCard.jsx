@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { STATUS_STYLES, GENRE_STYLES } from '../data';
 
 function ScoreDots({ score }) {
   return (
@@ -7,9 +6,7 @@ function ScoreDots({ score }) {
       {[1, 2, 3, 4, 5].map((n) => (
         <span
           key={n}
-          className={`w-2 h-2 rounded-full ${
-            n <= score ? 'bg-zinc-700' : 'bg-zinc-200'
-          }`}
+          className={`w-2 h-2 rounded-full ${n <= score ? 'bg-zinc-700' : 'bg-zinc-200'}`}
         />
       ))}
     </div>
@@ -28,10 +25,10 @@ function PlatformBadge({ platform }) {
   );
 }
 
-export default function ProjectCard({ project, onEdit, onDelete }) {
+export default function ProjectCard({ project, genres, statuses, getGenreStyle, getStatusStyle, onEdit, onDelete }) {
   const [showNotes, setShowNotes] = useState(false);
-  const s = STATUS_STYLES[project.status];
-  const g = GENRE_STYLES[project.genre];
+  const genreStyle = getGenreStyle(project.genre, genres);
+  const statusStyle = getStatusStyle(project.status, statuses);
 
   return (
     <div className="bg-white border border-zinc-200 rounded-xl p-5 flex flex-col gap-3 hover:border-zinc-300 transition-colors">
@@ -45,8 +42,8 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
             title="Редактировать"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
           </button>
           <button
@@ -55,10 +52,10 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
             title="Удалить"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-              <path d="M10 11v6M14 11v6"/>
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
             </svg>
           </button>
         </div>
@@ -66,9 +63,9 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
 
       {/* Tags row */}
       <div className="flex flex-wrap gap-1.5 items-center">
-        <span className={`text-xs px-2 py-0.5 rounded font-medium ${g}`}>{project.genre}</span>
-        <span className={`text-xs px-2 py-0.5 rounded font-medium flex items-center gap-1 ${s.bg} ${s.text}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+        <span className={`text-xs px-2 py-0.5 rounded font-medium ${genreStyle}`}>{project.genre}</span>
+        <span className={`text-xs px-2 py-0.5 rounded font-medium flex items-center gap-1 ${statusStyle.bg} ${statusStyle.text}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} />
           {project.status}
         </span>
       </div>

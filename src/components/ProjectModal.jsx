@@ -1,15 +1,5 @@
-import { useState, useEffect } from 'react';
-import { GENRES, STATUSES, PLATFORMS } from '../data';
-
-const EMPTY = {
-  title: '',
-  genre: GENRES[0],
-  status: STATUSES[0],
-  score: 3,
-  revenue: '',
-  platform: PLATFORMS[0],
-  notes: '',
-};
+import { useState, useEffect, useRef } from 'react';
+import { PLATFORMS } from '../data';
 
 function ScorePicker({ value, onChange }) {
   return (
@@ -32,7 +22,77 @@ function ScorePicker({ value, onChange }) {
   );
 }
 
-export default function ProjectModal({ initial, onSave, onClose }) {
+function InlineAdd({ items, onAdd, placeholder }) {
+  const [open, setOpen] = useState(false);
+  const [input, setInput] = useState('');
+  const ref = useRef(null);
+
+  const confirm = () => {
+    const val = input.trim();
+    if (val && !items.includes(val)) onAdd(val);
+    setInput('');
+    setOpen(false);
+  };
+
+  useEffect(() => {
+    if (open) ref.current?.focus();
+  }, [open]);
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors mt-1 self-start"
+      >
+        + добавить
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex gap-1 mt-1">
+      <input
+        ref={ref}
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { e.preventDefault(); confirm(); }
+          if (e.key === 'Escape') { setOpen(false); setInput(''); }
+        }}
+        placeholder={placeholder}
+        className="flex-1 border border-zinc-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-zinc-400 transition-colors"
+      />
+      <button
+        type="button"
+        onClick={confirm}
+        className="px-2 py-1 bg-zinc-900 text-white rounded-lg text-xs hover:bg-zinc-700 transition-colors"
+      >
+        ОК
+      </button>
+      <button
+        type="button"
+        onClick={() => { setOpen(false); setInput(''); }}
+        className="px-2 py-1 text-zinc-400 hover:text-zinc-600 text-xs transition-colors"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
+export default function ProjectModal({ initial, genres, statuses, onAddGenre, onAddStatus, onSave, onClose }) {
+  const EMPTY = {
+    title: '',
+    genre: genres[0],
+    status: statuses[0],
+    score: 3,
+    revenue: '',
+    platform: PLATFORMS[0],
+    notes: '',
+  };
+
   const [form, setForm] = useState(initial || EMPTY);
 
   useEffect(() => {
@@ -41,13 +101,20 @@ export default function ProjectModal({ initial, onSave, onClose }) {
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
+  const handleAddGenre = (g) => {
+    onAddGenre(g);
+    set('genre', g);
+  };
+
+  const handleAddStatus = (s) => {
+    onAddStatus(s);
+    set('status', s);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.title.trim()) return;
-    onSave({
-      ...form,
-      revenue: Number(form.revenue) || 0,
-    });
+    onSave({ ...form, revenue: Number(form.revenue) || 0 });
   };
 
   return (
@@ -61,18 +128,14 @@ export default function ProjectModal({ initial, onSave, onClose }) {
           <h2 className="text-lg font-semibold text-zinc-900">
             {initial ? 'Редактировать проект' : 'Новый проект'}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-700 transition-colors"
-          >
+          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-700 transition-colors">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {/* Title */}
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Название</label>
             <input
@@ -85,7 +148,6 @@ export default function ProjectModal({ initial, onSave, onClose }) {
             />
           </div>
 
-          {/* Genre + Status */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Жанр</label>
@@ -94,8 +156,9 @@ export default function ProjectModal({ initial, onSave, onClose }) {
                 onChange={(e) => set('genre', e.target.value)}
                 className="border border-zinc-200 rounded-lg px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400 transition-colors bg-white"
               >
-                {GENRES.map((g) => <option key={g}>{g}</option>)}
+                {genres.map((g) => <option key={g}>{g}</option>)}
               </select>
+              <InlineAdd items={genres} onAdd={handleAddGenre} placeholder="Новый жанр..." />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Статус</label>
@@ -104,20 +167,17 @@ export default function ProjectModal({ initial, onSave, onClose }) {
                 onChange={(e) => set('status', e.target.value)}
                 className="border border-zinc-200 rounded-lg px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400 transition-colors bg-white"
               >
-                {STATUSES.map((s) => <option key={s}>{s}</option>)}
+                {statuses.map((s) => <option key={s}>{s}</option>)}
               </select>
+              <InlineAdd items={statuses} onAdd={handleAddStatus} placeholder="Новый статус..." />
             </div>
           </div>
 
-          {/* Score */}
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
-              Релевантность
-            </label>
+            <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Релевантность</label>
             <ScorePicker value={form.score} onChange={(v) => set('score', v)} />
           </div>
 
-          {/* Revenue + Platform */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Доход / мес. ($)</label>
@@ -142,7 +202,6 @@ export default function ProjectModal({ initial, onSave, onClose }) {
             </div>
           </div>
 
-          {/* Notes */}
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Заметки</label>
             <textarea
@@ -154,7 +213,6 @@ export default function ProjectModal({ initial, onSave, onClose }) {
             />
           </div>
 
-          {/* Actions */}
           <div className="flex gap-2 pt-1">
             <button
               type="button"

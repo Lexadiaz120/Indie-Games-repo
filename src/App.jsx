@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from './lib/supabase';
-import { loadSettings, saveSettings, getGenreStyle, getStatusStyle } from './lib/settings';
+import { loadSettings, saveSettings, DEFAULT_SETTINGS, getGenreStyle, getStatusStyle } from './lib/settings';
 import ProjectCard from './components/ProjectCard';
 import ProjectModal from './components/ProjectModal';
 import Filters from './components/Filters';
@@ -15,11 +15,17 @@ export default function App() {
   const [sortBy, setSortBy] = useState('default');
   const [modal, setModal] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [settings, setSettings] = useState(loadSettings);
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
   useEffect(() => {
     fetchProjects();
+    fetchSettings();
   }, []);
+
+  async function fetchSettings() {
+    const data = await loadSettings();
+    setSettings(data);
+  }
 
   async function fetchProjects() {
     setLoading(true);
@@ -54,6 +60,7 @@ export default function App() {
     setSettings(next);
     saveSettings(next);
   }
+
 
   const displayed = useMemo(() => {
     let list = [...projects];

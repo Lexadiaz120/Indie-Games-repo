@@ -1,4 +1,9 @@
+import { supabase } from './supabase';
 import { GENRES, STATUSES } from '../data';
+
+const SETTINGS_ID = 'app';
+
+export const DEFAULT_SETTINGS = { genres: GENRES, statuses: STATUSES };
 
 const GENRE_COLORS = [
   'bg-violet-100 text-violet-700',
@@ -22,18 +27,19 @@ const STATUS_COLORS = [
   { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-400' },
 ];
 
-const KEY = 'indie-board-settings';
-
-export function loadSettings() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return { genres: GENRES, statuses: STATUSES };
+export async function loadSettings() {
+  const { data } = await supabase
+    .from('settings')
+    .select('value')
+    .eq('id', SETTINGS_ID)
+    .single();
+  return data?.value || DEFAULT_SETTINGS;
 }
 
-export function saveSettings(settings) {
-  localStorage.setItem(KEY, JSON.stringify(settings));
+export async function saveSettings(settings) {
+  await supabase
+    .from('settings')
+    .upsert({ id: SETTINGS_ID, value: settings });
 }
 
 export function getGenreStyle(genre, genres) {

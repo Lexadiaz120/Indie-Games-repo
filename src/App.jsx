@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from './lib/supabase';
 import { loadSettings, saveSettings, DEFAULT_SETTINGS, getGenreStyle, getStatusStyle } from './lib/settings';
+import { tr, LANGS } from './lib/i18n';
 import ProjectCard from './components/ProjectCard';
 import ProjectModal from './components/ProjectModal';
 import Filters from './components/Filters';
 import SettingsModal from './components/SettingsModal';
+import LanguageModal from './components/LanguageModal';
 
 export default function App() {
   const [projects, setProjects] = useState([]);
@@ -16,6 +18,10 @@ export default function App() {
   const [modal, setModal] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+  const lang = settings.language;
+  const t = tr[lang || 'ru'];
 
   useEffect(() => {
     fetchProjects();
@@ -25,6 +31,7 @@ export default function App() {
   async function fetchSettings() {
     const data = await loadSettings();
     setSettings(data);
+    setSettingsLoaded(true);
   }
 
   async function fetchProjects() {
@@ -34,17 +41,25 @@ export default function App() {
       .from('projects')
       .select('*')
       .order('created_at', { ascending: true });
-    if (error) {
-      setError(error.message);
-    } else {
-      setProjects(data);
-    }
+    if (error) setError(error.message);
+    else setProjects(data);
     setLoading(false);
   }
 
+  function handleLanguageSelect(code) {
+    const next = { ...settings, language: code };
+    setSettings(next);
+    saveSettings(next);
+  }
+
+  function handleLangChange(code) {
+    handleLanguageSelect(code);
+  }
+
   function handleSettingsSave(newSettings) {
-    setSettings(newSettings);
-    saveSettings(newSettings);
+    const next = { ...newSettings, language: lang };
+    setSettings(next);
+    saveSettings(next);
     setFilterStatus(null);
     setFilterGenre(null);
   }
@@ -60,7 +75,6 @@ export default function App() {
     setSettings(next);
     saveSettings(next);
   }
-
 
   const displayed = useMemo(() => {
     let list = [...projects];
@@ -78,33 +92,23 @@ export default function App() {
 
   async function handleSave(data) {
     if (modal && modal !== 'add') {
-      const { error } = await supabase
-        .from('projects')
-        .update(data)
-        .eq('id', modal.id);
-      if (!error) {
-        setProjects((ps) =>
-          ps.map((p) => (p.id === modal.id ? { ...p, ...data } : p))
-        );
-      }
+      const { error } = await supabase.from('projects').update(data).eq('id', modal.id);
+      if (!error) setProjects((ps) => ps.map((p) => (p.id === modal.id ? { ...p, ...data } : p)));
     } else {
-      const { data: inserted, error } = await supabase
-        .from('projects')
-        .insert(data)
-        .select()
-        .single();
-      if (!error) {
-        setProjects((ps) => [...ps, inserted]);
-      }
+      const { data: inserted, error } = await supabase.from('projects').insert(data).select().single();
+      if (!error) setProjects((ps) => [...ps, inserted]);
     }
     setModal(null);
   }
 
   async function handleDelete(id) {
     const { error } = await supabase.from('projects').delete().eq('id', id);
-    if (!error) {
-      setProjects((ps) => ps.filter((p) => p.id !== id));
-    }
+    if (!error) setProjects((ps) => ps.filter((p) => p.id !== id));
+  }
+
+  // Показываем модал выбора языка если настройки загружены, но язык не выбран
+  if (settingsLoaded && !lang) {
+    return <LanguageModal onSelect={handleLanguageSelect} />;
   }
 
   return (
@@ -113,28 +117,32 @@ export default function App() {
       <header className="bg-white border-b border-zinc-200 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-semibold text-zinc-900 leading-tight m-0">
-              Инди-игры
-            </h1>
-            <p className="text-sm text-zinc-400 mt-0.5">Трекер проектов</p>
+            <h1 className="text-xl font-semibold text-zinc-900 leading-tight m-0">{t.appTitle}</h1>
+            <p className="text-sm text-zinc-400 mt-0.5">{t.appSubtitle}</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-              <p className="text-xs text-zinc-400">Показано проектов</p>
-              <p className="text-sm font-semibold text-zinc-700">
-                {displayed.length} / {projects.length}
-              </p>
+              <p className="text-xs text-zinc-400">{t.shownProjects}</p>
+              <p className="text-sm font-semibold text-zinc-700">{displayed.length} / {projects.length}</p>
             </div>
             <div className="text-right hidden sm:block">
-              <p className="text-xs text-zinc-400">Суммарный доход</p>
-              <p className="text-sm font-semibold text-emerald-600">
-                ${totalRevenue.toLocaleString()}
-              </p>
+              <p className="text-xs text-zinc-400">{t.totalRevenue}</p>
+              <p className="text-sm font-semibold text-emerald-600">${totalRevenue.toLocaleString()}</p>
             </div>
+            {/* Language badge */}
+            {lang && (
+              <button
+                onClick={() => setShowSettings(true)}
+                className="text-lg"
+                title={t.language}
+              >
+                {LANGS[lang]?.flag}
+              </button>
+            )}
             <button
               onClick={() => setShowSettings(true)}
               className="p-2 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors"
-              title="Настройки"
+              title={t.settings}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="3" />
@@ -149,7 +157,7 @@ export default function App() {
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Добавить
+              {t.add}
             </button>
           </div>
         </div>
@@ -159,6 +167,7 @@ export default function App() {
       <div className="bg-white border-b border-zinc-200 px-6 py-4">
         <div className="max-w-6xl mx-auto">
           <Filters
+            lang={lang || 'ru'}
             genres={settings.genres}
             statuses={settings.statuses}
             filterStatus={filterStatus}
@@ -178,17 +187,12 @@ export default function App() {
             <svg className="animate-spin" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 12a9 9 0 1 1-6.219-8.56" />
             </svg>
-            <p className="text-sm">Загрузка...</p>
+            <p className="text-sm">{t.loading}</p>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <p className="text-sm text-red-500">Ошибка: {error}</p>
-            <button
-              onClick={fetchProjects}
-              className="text-sm text-zinc-500 underline hover:text-zinc-800 transition-colors"
-            >
-              Повторить
-            </button>
+            <p className="text-sm text-red-500">{t.error}: {error}</p>
+            <button onClick={fetchProjects} className="text-sm text-zinc-500 underline hover:text-zinc-800 transition-colors">{t.retry}</button>
           </div>
         ) : displayed.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-zinc-400">
@@ -197,17 +201,10 @@ export default function App() {
               <line x1="8" y1="21" x2="16" y2="21" />
               <line x1="12" y1="17" x2="12" y2="21" />
             </svg>
-            <p className="text-sm">
-              {projects.length === 0
-                ? 'Проектов пока нет. Добавьте первый!'
-                : 'Нет проектов, соответствующих фильтрам'}
-            </p>
+            <p className="text-sm">{projects.length === 0 ? t.noProjects : t.noMatch}</p>
             {projects.length > 0 && (
-              <button
-                onClick={() => { setFilterStatus(null); setFilterGenre(null); }}
-                className="text-sm text-zinc-500 underline hover:text-zinc-800 transition-colors"
-              >
-                Сбросить фильтры
+              <button onClick={() => { setFilterStatus(null); setFilterGenre(null); }} className="text-sm text-zinc-500 underline hover:text-zinc-800 transition-colors">
+                {t.resetFilters}
               </button>
             )}
           </div>
@@ -216,6 +213,7 @@ export default function App() {
             {displayed.map((p) => (
               <ProjectCard
                 key={p.id}
+                lang={lang || 'ru'}
                 project={p}
                 genres={settings.genres}
                 statuses={settings.statuses}
@@ -231,6 +229,7 @@ export default function App() {
 
       {modal && (
         <ProjectModal
+          lang={lang || 'ru'}
           initial={modal !== 'add' ? modal : null}
           genres={settings.genres}
           statuses={settings.statuses}
@@ -243,9 +242,11 @@ export default function App() {
 
       {showSettings && (
         <SettingsModal
+          lang={lang || 'ru'}
           genres={settings.genres}
           statuses={settings.statuses}
           onSave={handleSettingsSave}
+          onLangChange={handleLangChange}
           onClose={() => setShowSettings(false)}
         />
       )}

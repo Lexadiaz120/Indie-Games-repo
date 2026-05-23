@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { tr } from '../lib/i18n';
 
 function ScoreDots({ score }) {
   return (
@@ -25,21 +26,21 @@ function PlatformBadge({ platform }) {
   );
 }
 
-export default function ProjectCard({ project, genres, statuses, getGenreStyle, getStatusStyle, onEdit, onDelete }) {
+export default function ProjectCard({ lang, project, genres, statuses, getGenreStyle, getStatusStyle, onEdit, onDelete }) {
   const [showNotes, setShowNotes] = useState(false);
+  const t = tr[lang];
   const genreStyle = getGenreStyle(project.genre, genres);
   const statusStyle = getStatusStyle(project.status, statuses);
 
   return (
     <div className="bg-white border border-zinc-200 rounded-xl p-5 flex flex-col gap-3 hover:border-zinc-300 transition-colors">
-      {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-semibold text-zinc-900 text-base leading-tight">{project.title}</h3>
         <div className="flex gap-1 shrink-0">
           <button
             onClick={() => onEdit(project)}
             className="p-1 text-zinc-400 hover:text-zinc-700 transition-colors"
-            title="Редактировать"
+            title={t.editProject}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -49,7 +50,7 @@ export default function ProjectCard({ project, genres, statuses, getGenreStyle, 
           <button
             onClick={() => onDelete(project.id)}
             className="p-1 text-zinc-400 hover:text-red-500 transition-colors"
-            title="Удалить"
+            title={t.delete}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="3 6 5 6 21 6" />
@@ -61,7 +62,6 @@ export default function ProjectCard({ project, genres, statuses, getGenreStyle, 
         </div>
       </div>
 
-      {/* Tags row */}
       <div className="flex flex-wrap gap-1.5 items-center">
         <span className={`text-xs px-2 py-0.5 rounded font-medium ${genreStyle}`}>{project.genre}</span>
         <span className={`text-xs px-2 py-0.5 rounded font-medium flex items-center gap-1 ${statusStyle.bg} ${statusStyle.text}`}>
@@ -70,21 +70,19 @@ export default function ProjectCard({ project, genres, statuses, getGenreStyle, 
         </span>
       </div>
 
-      {/* Metrics */}
       <div className="flex items-center justify-between text-sm">
         <div className="flex flex-col gap-0.5">
-          <span className="text-zinc-400 text-xs">Релевантность</span>
+          <span className="text-zinc-400 text-xs">{t.relevance}</span>
           <ScoreDots score={project.score} />
         </div>
         <div className="flex flex-col gap-0.5 items-end">
-          <span className="text-zinc-400 text-xs">Доход / мес.</span>
+          <span className="text-zinc-400 text-xs">{t.revenuePerMonth}</span>
           <span className="font-semibold text-zinc-800 text-sm">
             {project.revenue > 0 ? `$${project.revenue.toLocaleString()}` : '—'}
           </span>
         </div>
       </div>
 
-      {/* Platform */}
       <div className="flex items-center justify-between">
         <PlatformBadge platform={project.platform} />
         {project.notes && (
@@ -92,12 +90,11 @@ export default function ProjectCard({ project, genres, statuses, getGenreStyle, 
             onClick={() => setShowNotes((v) => !v)}
             className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
           >
-            {showNotes ? 'скрыть' : 'заметки ↓'}
+            {showNotes ? t.notesHide : t.notesShow}
           </button>
         )}
       </div>
 
-      {/* Notes */}
       {showNotes && project.notes && (
         <p className="text-xs text-zinc-500 bg-zinc-50 rounded-lg p-3 leading-relaxed border border-zinc-100">
           {project.notes}

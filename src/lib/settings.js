@@ -3,7 +3,7 @@ import { GENRES, STATUSES } from '../data';
 
 const SETTINGS_ID = 'app';
 
-export const DEFAULT_SETTINGS = { genres: GENRES, statuses: STATUSES };
+export const DEFAULT_SETTINGS = { genres: GENRES, statuses: STATUSES, language: null };
 
 const GENRE_COLORS = [
   'bg-violet-100 text-violet-700',
